@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>AI Weekend · Canlı Şarkı Puanlama</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root{
+    --bg:#130E20; --bg2:#1C1335;
+    --surface:#241836; --surface2:#2E2047;
+    --line:rgba(255,255,255,.09);
+    --text:#F3ECFF; --muted:#A292C2;
+    --gold:#FFC53D; --gold2:#FFB000;
+    --magenta:#FF4F8B; --magenta2:#FF7AB0;
+    --cyan:#57E0FF;
+    --radius:22px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:
+      radial-gradient(1100px 620px at 18% -8%, rgba(255,79,139,.20), transparent 60%),
+      radial-gradient(900px 560px at 92% 0%, rgba(87,224,255,.14), transparent 55%),
+      linear-gradient(180deg,var(--bg2),var(--bg) 70%);
+    color:var(--text);
+    font-family:Inter,system-ui,sans-serif;
+    min-height:100%;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1280px;margin:0 auto;padding:26px clamp(16px,3vw,34px) 60px}
+
+  header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:26px}
+  .eyebrow{display:inline-flex;align-items:center;gap:9px;font-size:13px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--cyan)}
+  .live-dot{width:9px;height:9px;border-radius:50%;background:var(--magenta);box-shadow:0 0 0 0 rgba(255,79,139,.7);animation:pulse 1.6s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,79,139,.55)}70%{box-shadow:0 0 0 12px rgba(255,79,139,0)}100%{box-shadow:0 0 0 0 rgba(255,79,139,0)}}
+  h1{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:clamp(28px,4.4vw,52px);line-height:.98;margin:6px 0 0;letter-spacing:-.02em}
+  h1 .accent{background:linear-gradient(90deg,var(--gold),var(--magenta2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .tag{color:var(--muted);font-size:14px;text-align:right}
+
+  .grid{display:grid;grid-template-columns:minmax(280px,1fr) 1.55fr;gap:22px;align-items:start}
+  @media(max-width:920px){.grid{grid-template-columns:1fr}}
+
+  .card{background:linear-gradient(180deg,var(--surface),var(--surface2));border:1px solid var(--line);border-radius:var(--radius);padding:22px}
+  .card h2{font-family:"Bricolage Grotesque",sans-serif;font-weight:700;font-size:16px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:0 0 14px}
+
+  /* QR */
+  .qrcard{text-align:center}
+  .qrbox{background:#fff;border-radius:18px;padding:16px;display:inline-block;line-height:0;box-shadow:0 18px 40px -18px rgba(0,0,0,.6)}
+  .qrbox img,.qrbox canvas{display:block;border-radius:6px}
+  .qrhint{margin:16px 4px 4px;color:var(--text);font-weight:600;font-size:15px}
+  .qrurl{margin-top:6px;color:var(--cyan);font-size:13px;word-break:break-all;font-family:ui-monospace,monospace}
+
+  /* Controls */
+  .controls{margin-top:18px;display:flex;flex-direction:column;gap:12px}
+  .inputrow{display:flex;gap:10px}
+  input[type=text]{flex:1;min-width:0;background:rgba(0,0,0,.25);border:1px solid var(--line);color:var(--text);
+    border-radius:14px;padding:14px 16px;font-size:16px;font-family:inherit}
+  input[type=text]::placeholder{color:#7d6ea0}
+  input[type=text]:focus{outline:none;border-color:var(--magenta);box-shadow:0 0 0 3px rgba(255,79,139,.22)}
+  .btn{border:none;border-radius:14px;padding:14px 16px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;
+    transition:transform .08s ease,filter .15s ease;color:#1a1030}
+  .btn:active{transform:translateY(1px)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn-magenta{background:linear-gradient(135deg,var(--magenta),var(--magenta2));color:#2a0d1c}
+  .btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#3a2700}
+  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--muted)}
+  .btn-ghost:hover{color:var(--text);border-color:var(--magenta)}
+  .btn-row{display:flex;gap:10px}
+  .btn-row .btn{flex:1}
+
+  /* Stage */
+  .stage{position:relative;overflow:hidden;text-align:center;padding:34px 22px}
+  .stage::before{content:"";position:absolute;inset:-40% 20% auto;height:70%;
+    background:radial-gradient(closest-side,rgba(255,197,61,.18),transparent);pointer-events:none}
+  .stage .label{position:relative;color:var(--muted);font-size:14px;letter-spacing:.16em;text-transform:uppercase;font-weight:700}
+  .performer{position:relative;font-family:"Bricolage Grotesque",sans-serif;font-weight:800;
+    font-size:clamp(30px,5vw,58px);line-height:1.02;margin:8px 0 4px;letter-spacing:-.02em}
+  .performer.idle{color:var(--muted);font-weight:700;font-size:clamp(22px,3.4vw,34px)}
+
+  .stars{position:relative;display:inline-block;white-space:nowrap;font-size:clamp(38px,7vw,76px);line-height:1;margin:10px 0 6px;user-select:none}
+  .stars .bg{color:rgba(255,255,255,.13)}
+  .stars .fg{position:absolute;inset:0;overflow:hidden;width:0;color:var(--gold);
+    text-shadow:0 0 22px rgba(255,197,61,.55);transition:width .5s cubic-bezier(.2,.8,.2,1)}
+
+  .score{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:clamp(46px,9vw,104px);line-height:.9;
+    background:linear-gradient(180deg,#fff,var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:-.03em}
+  .score .of{font-size:.3em;color:var(--muted);-webkit-text-fill-color:var(--muted);font-weight:700}
+  .count{color:var(--muted);font-size:16px;margin-top:6px}
+  .count b{color:var(--text)}
+
+  /* Scoreboard */
+  .board{margin-top:22px}
+  .board .empty{color:var(--muted);padding:14px 4px;font-size:15px}
+  ul.scores{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+  ul.scores li{display:grid;grid-template-columns:46px 1fr auto auto;align-items:center;gap:12px;
+    background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+  ul.scores li.flash{animation:flash 1.6s ease}
+  @keyframes flash{0%{background:rgba(255,197,61,.30);border-color:var(--gold)}100%{background:rgba(255,255,255,.035)}}
+  .rank{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:20px;text-align:center;color:var(--muted)}
+  .rank.r1{color:var(--gold)} .rank.r2{color:#cfd6e6} .rank.r3{color:#e3a06a}
+  .sname{font-weight:600;font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .savg{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:20px;color:var(--gold);display:flex;align-items:center;gap:6px}
+  .scnt{color:var(--muted);font-size:13px}
+  .del{background:none;border:none;color:#6f5f90;font-size:18px;cursor:pointer;padding:2px 6px;border-radius:8px}
+  .del:hover{color:var(--magenta);background:rgba(255,79,139,.12)}
+
+  .footer-actions{margin-top:18px;display:flex;justify-content:flex-end}
+
+  /* Reveal overlay */
+  .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:40;
+    background:rgba(10,6,20,.72);backdrop-filter:blur(6px)}
+  .overlay.show{display:flex;animation:fade .25s ease}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .reveal{text-align:center;animation:pop .45s cubic-bezier(.2,1.4,.4,1)}
+  @keyframes pop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+  .reveal .rname{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:clamp(30px,5vw,56px);margin-bottom:4px}
+  .reveal .rscore{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:clamp(64px,14vw,150px);
+    background:linear-gradient(180deg,#fff,var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent;line-height:.9}
+  .reveal .rstars{font-size:clamp(28px,5vw,52px);color:var(--gold);text-shadow:0 0 22px rgba(255,197,61,.5);letter-spacing:.08em}
+  .reveal .rsub{color:var(--muted);margin-top:10px}
+  canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:45;display:none}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#3a1230;border:1px solid var(--magenta);
+    color:var(--text);padding:12px 18px;border-radius:12px;font-size:15px;z-index:50;display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <span class="eyebrow"><span class="live-dot"></span> AI Weekend · Canlı</span>
+      <h1>Şarkı <span class="accent">Puanlama</span></h1>
+    </div>
+    <div class="tag">Sahne ekranı &amp; kontrol paneli<br>5 yıldız üzerinden oyla</div>
+  </header>
+
+  <div class="grid">
+    <!-- SOL: QR + kontroller -->
+    <div>
+      <section class="card qrcard">
+        <h2>Telefonla oyla</h2>
+        <div class="qrbox"><div id="qr"></div></div>
+        <div class="qrhint">QR'ı okut → puan ver</div>
+        <div class="qrurl" id="voteurl"></div>
+      </section>
+
+      <section class="card controls">
+        <h2>Kontrol</h2>
+        <div class="inputrow">
+          <input type="text" id="nameInput" placeholder="Sahnedeki kişinin adı" autocomplete="off" />
+          <button class="btn btn-magenta" id="startBtn">Başlat</button>
+        </div>
+        <button class="btn btn-gold" id="finishBtn" disabled>Bitir &amp; Skora Kaydet</button>
+        <div class="btn-row">
+          <button class="btn btn-ghost" id="cancelBtn" disabled>Kaydetmeden iptal</button>
+          <button class="btn btn-ghost" id="resetBtn">Skoru sıfırla</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- SAĞ: sahne + skor tablosu -->
+    <div>
+      <section class="card stage">
+        <div class="label" id="stageLabel">Şu an sahnede</div>
+        <div class="performer idle" id="performer">Henüz kimse seçilmedi</div>
+        <div class="stars"><span class="bg">★★★★★</span><span class="fg" id="starsFg">★★★★★</span></div>
+        <div class="score" id="score">–<span class="of"> / 5</span></div>
+        <div class="count" id="count"><b>0</b> kişi oyladı</div>
+      </section>
+
+      <section class="card board">
+        <h2>Skor Tablosu</h2>
+        <div class="empty" id="boardEmpty">Henüz kayıtlı puan yok. Birini başlatıp “Bitir”e basınca buraya eklenir.</div>
+        <ul class="scores" id="scores"></ul>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="reveal">
+    <div class="rname" id="rName"></div>
+    <div class="rscore" id="rScore"></div>
+    <div class="rstars" id="rStars"></div>
+    <div class="rsub" id="rSub"></div>
+  </div>
+</div>
+<canvas id="confetti"></canvas>
+<div class="toast" id="toast"></div>
+
+<script>
+const VOTE_URL = location.origin + "/oy";
+document.getElementById("voteurl").textContent = VOTE_URL;
+new QRCode(document.getElementById("qr"), {
+  text: VOTE_URL, width: 224, height: 224,
+  colorDark: "#130E20", colorLight: "#ffffff",
+  correctLevel: QRCode.CorrectLevel.M
+});
+
+const $ = (id) => document.getElementById(id);
+let lastSession = -1, prevTopIds = new Set();
+
+function toast(msg){
+  const t = $("toast"); t.textContent = msg; t.style.display = "block";
+  clearTimeout(t._t); t._t = setTimeout(()=>{ t.style.display = "none"; }, 2600);
+}
+
+async function api(path, body){
+  const r = await fetch(path, {
+    method: body ? "POST" : "GET",
+    headers: body ? {"content-type":"application/json"} : {},
+    body: body ? JSON.stringify(body) : undefined
+  });
+  const data = await r.json().catch(()=>({}));
+  if(!r.ok) toast(data.error || "Bir hata oldu");
+  return { ok:r.ok, data };
+}
+
+function render(s){
+  const active = s.active && s.active.length;
+  const perf = $("performer");
+  if(active){ perf.textContent = s.active; perf.classList.remove("idle"); $("stageLabel").textContent = "Şu an sahnede"; }
+  else { perf.textContent = "Henüz kimse seçilmedi"; perf.classList.add("idle"); $("stageLabel").textContent = "Sıradaki kişiyi başlat"; }
+
+  const pct = active ? (s.avg/5*100) : 0;
+  $("starsFg").style.width = pct + "%";
+  $("score").innerHTML = (active && s.count>0 ? s.avg.toFixed(1) : "–") + '<span class="of"> / 5</span>';
+  $("count").innerHTML = "<b>" + s.count + "</b> kişi oyladı";
+
+  $("finishBtn").disabled = !active;
+  $("cancelBtn").disabled = !active;
+
+  // skor tablosu
+  const ul = $("scores"); const empty = $("boardEmpty");
+  if(!s.board.length){ ul.innerHTML=""; empty.style.display="block"; }
+  else {
+    empty.style.display="none";
+    ul.innerHTML = s.board.map((b,i)=>{
+      const rc = i===0?"r1":i===1?"r2":i===2?"r3":"";
+      const fresh = !prevTopIds.has(b.id) && prevTopIds.size ? "flash" : "";
+      return `<li class="${fresh}">
+        <span class="rank ${rc}">${i+1}</span>
+        <span class="sname">${esc(b.name)}</span>
+        <span class="savg">★ ${b.avg.toFixed(1)} <span class="scnt">(${b.cnt})</span></span>
+        <button class="del" data-id="${b.id}" title="Sil">×</button>
+      </li>`;
+    }).join("");
+  }
+  prevTopIds = new Set(s.board.map(b=>b.id));
+  lastSession = s.session;
+}
+
+function esc(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+$("startBtn").onclick = async ()=>{
+  const name = $("nameInput").value.trim();
+  if(!name){ toast("Önce bir isim yaz"); $("nameInput").focus(); return; }
+  const { ok, data } = await api("/api/start", { name });
+  if(ok){ $("nameInput").value=""; render(data); }
+};
+$("nameInput").addEventListener("keydown", e=>{ if(e.key==="Enter") $("startBtn").click(); });
+
+$("finishBtn").onclick = async ()=>{
+  const { ok, data } = await api("/api/finish");
+  if(ok){
+    if(data.finished && data.finished.cnt>0) celebrate(data.finished);
+    else toast("Hiç oy gelmediği için kaydedilmedi");
+    render(data);
+  }
+};
+$("cancelBtn").onclick = async ()=>{
+  const { ok, data } = await api("/api/cancel"); if(ok) render(data);
+};
+$("resetBtn").onclick = async ()=>{
+  if(!confirm("Tüm skor tablosu silinsin mi? Bu geri alınamaz.")) return;
+  const { ok, data } = await api("/api/reset"); if(ok){ prevTopIds=new Set(); render(data); }
+};
+$("scores").addEventListener("click", async (e)=>{
+  const btn = e.target.closest(".del"); if(!btn) return;
+  if(!confirm("Bu kayıt silinsin mi?")) return;
+  const { ok, data } = await api("/api/board/delete", { id: Number(btn.dataset.id) }); if(ok) render(data);
+});
+
+// --- Sonuç gösterimi + konfeti ---
+function celebrate(f){
+  $("rName").textContent = f.name;
+  $("rScore").textContent = f.avg.toFixed(1);
+  const full = Math.round(f.avg);
+  $("rStars").textContent = "★★★★★".slice(0,full) + "☆☆☆☆☆".slice(0,5-full);
+  $("rSub").textContent = f.cnt + " kişi oyladı · skor tablosuna eklendi";
+  $("overlay").classList.add("show");
+  confetti();
+  setTimeout(()=> $("overlay").classList.remove("show"), 3600);
+}
+$("overlay").onclick = ()=> $("overlay").classList.remove("show");
+
+function confetti(){
+  const cv = $("confetti"); const ctx = cv.getContext("2d");
+  cv.width = innerWidth; cv.height = innerHeight; cv.style.display="block";
+  const colors = ["#FFC53D","#FF4F8B","#57E0FF","#FFF","#FF7AB0"];
+  const N = 150, parts = [];
+  for(let i=0;i<N;i++) parts.push({
+    x: innerWidth/2 + (Math.random()-.5)*200, y: innerHeight/2,
+    vx:(Math.random()-.5)*14, vy:Math.random()*-15-4,
+    s:Math.random()*8+4, c:colors[i%colors.length], rot:Math.random()*6, vr:(Math.random()-.5)*.4, life:0
+  });
+  let frame=0;
+  (function loop(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    parts.forEach(p=>{
+      p.vy+=0.45; p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr; p.life++;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+      ctx.fillStyle=p.c; ctx.fillRect(-p.s/2,-p.s/2,p.s,p.s*0.6); ctx.restore();
+    });
+    frame++;
+    if(frame<150) requestAnimationFrame(loop);
+    else { cv.style.display="none"; ctx.clearRect(0,0,cv.width,cv.height); }
+  })();
+}
+
+// --- canlı durum yoklama ---
+async function poll(){
+  try{ const r = await fetch("/api/state",{cache:"no-store"}); if(r.ok) render(await r.json()); }catch{}
+}
+poll();
+setInterval(poll, 1200);
+</script>
+</body>
+</html>

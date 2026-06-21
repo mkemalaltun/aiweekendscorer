@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Oyla · AI Weekend</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#130E20; --bg2:#1C1335; --surface:#241836; --surface2:#2E2047;
+    --line:rgba(255,255,255,.10); --text:#F3ECFF; --muted:#A292C2;
+    --gold:#FFC53D; --gold2:#FFB000; --magenta:#FF4F8B; --magenta2:#FF7AB0; --cyan:#57E0FF;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;min-height:100%}
+  body{
+    background:
+      radial-gradient(700px 480px at 50% -10%, rgba(255,79,139,.22), transparent 60%),
+      linear-gradient(180deg,var(--bg2),var(--bg) 75%);
+    color:var(--text); font-family:Inter,system-ui,sans-serif;
+    min-height:100dvh; display:flex; flex-direction:column;
+    -webkit-font-smoothing:antialiased;
+  }
+  .top{padding:22px 20px 6px;text-align:center}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--cyan)}
+  .live-dot{width:8px;height:8px;border-radius:50%;background:var(--magenta);box-shadow:0 0 0 0 rgba(255,79,139,.7);animation:pulse 1.6s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,79,139,.55)}70%{box-shadow:0 0 0 10px rgba(255,79,139,0)}100%{box-shadow:0 0 0 0 rgba(255,79,139,0)}}
+
+  main{flex:1;display:flex;flex-direction:column;justify-content:center;padding:8px 20px 30px;text-align:center}
+  .label{color:var(--muted);font-size:14px;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+  .performer{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:clamp(34px,11vw,52px);line-height:1.04;margin:8px 0 26px;letter-spacing:-.02em}
+
+  .stars{display:flex;justify-content:center;gap:6px;margin:0 auto 8px}
+  .star{font-size:clamp(46px,15vw,64px);line-height:1;color:rgba(255,255,255,.16);cursor:pointer;
+    transition:transform .12s ease,color .12s ease;padding:2px}
+  .star.on{color:var(--gold);text-shadow:0 0 18px rgba(255,197,61,.55)}
+  .star:active{transform:scale(1.18)}
+  .pick{height:22px;color:var(--gold);font-weight:700;font-size:15px;margin-bottom:22px}
+
+  .send{width:100%;max-width:420px;margin:0 auto;border:none;border-radius:16px;padding:18px;font-size:18px;font-weight:800;font-family:inherit;
+    color:#2a0d1c;background:linear-gradient(135deg,var(--magenta),var(--magenta2));cursor:pointer;transition:transform .08s ease,filter .15s ease}
+  .send:active{transform:translateY(1px)}
+  .send:disabled{opacity:.4;cursor:not-allowed}
+  .send.sent{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#3a2700}
+
+  .note{color:var(--muted);font-size:14px;margin-top:16px;min-height:20px}
+  .note b{color:var(--text)}
+
+  /* bekleme durumu */
+  .waiting .stars,.waiting .pick,.waiting .send,.waiting .label{display:none}
+  .waitcard{max-width:420px;margin:0 auto;background:linear-gradient(180deg,var(--surface),var(--surface2));
+    border:1px solid var(--line);border-radius:20px;padding:34px 24px}
+  .waitcard .spin{width:40px;height:40px;border-radius:50%;border:3px solid rgba(255,255,255,.12);border-top-color:var(--magenta);
+    margin:0 auto 16px;animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .waitcard h2{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:22px;margin:0 0 6px}
+  .waitcard p{color:var(--muted);margin:0;font-size:15px}
+  .hide{display:none}
+  footer{padding:14px;text-align:center;color:#6f5f90;font-size:12px}
+</style>
+</head>
+<body>
+  <div class="top">
+    <span class="eyebrow"><span class="live-dot"></span> AI Weekend</span>
+  </div>
+
+  <main id="root">
+    <!-- aktif performans ekranı -->
+    <div id="active">
+      <div class="label">Şu an sahnede</div>
+      <div class="performer" id="performer">—</div>
+      <div class="stars" id="stars">
+        <span class="star" data-v="1">★</span>
+        <span class="star" data-v="2">★</span>
+        <span class="star" data-v="3">★</span>
+        <span class="star" data-v="4">★</span>
+        <span class="star" data-v="5">★</span>
+      </div>
+      <div class="pick" id="pick"></div>
+      <button class="send" id="send" disabled>Puanı gönder</button>
+      <div class="note" id="note">Yıldızlara dokunarak puanını seç</div>
+    </div>
+
+    <!-- bekleme ekranı -->
+    <div id="waiting" class="waitcard hide">
+      <div class="spin"></div>
+      <h2>Birazdan başlıyor</h2>
+      <p>Sunucu sahneye birini çıkarınca burada belirecek. Bu ekranı açık tut.</p>
+    </div>
+  </main>
+
+  <footer>5 yıldız üzerinden puanla · her kişi için 1 oy</footer>
+
+<script>
+const $ = (id)=>document.getElementById(id);
+
+// kalıcı oy kimliği (aynı kişi tek oy)
+let voter = localStorage.getItem("voterId");
+if(!voter){ voter = (crypto.randomUUID ? crypto.randomUUID() : Date.now()+"-"+Math.random()); localStorage.setItem("voterId", voter); }
+
+let session = -1;       // aktif performans kimliği
+let selected = 0;       // seçili yıldız
+let sentForSession = -1;// hangi performansta oy verildi
+
+function paintStars(n){
+  document.querySelectorAll(".star").forEach(s=>{
+    s.classList.toggle("on", Number(s.dataset.v) <= n);
+  });
+}
+document.querySelectorAll(".star").forEach(s=>{
+  s.addEventListener("click", ()=>{
+    selected = Number(s.dataset.v);
+    paintStars(selected);
+    $("pick").textContent = selected + " yıldız";
+    $("send").disabled = false;
+    if($("send").classList.contains("sent")){
+      $("send").classList.remove("sent");
+      $("send").textContent = "Puanı güncelle";
+    }
+  });
+});
+
+$("send").onclick = async ()=>{
+  if(!selected) return;
+  $("send").disabled = true;
+  try{
+    const r = await fetch("/api/vote", {
+      method:"POST", headers:{"content-type":"application/json"},
+      body: JSON.stringify({ stars: selected, voter })
+    });
+    const d = await r.json().catch(()=>({}));
+    if(r.ok){
+      sentForSession = session;
+      $("send").classList.add("sent");
+      $("send").textContent = "Gönderildi ✓";
+      $("note").innerHTML = "Teşekkürler! <b>"+selected+" yıldız</b> verdin. İstersen değiştirip tekrar gönder.";
+    } else {
+      $("note").textContent = d.error || "Gönderilemedi, tekrar dene";
+      $("send").disabled = false;
+    }
+  }catch{
+    $("note").textContent = "Bağlantı hatası, tekrar dene";
+    $("send").disabled = false;
+  }
+};
+
+function showActive(name){
+  $("waiting").classList.add("hide");
+  $("active").classList.remove("hide");
+  document.body.classList.remove("waiting");
+  $("performer").textContent = name;
+}
+function showWaiting(){
+  $("active").classList.add("hide");
+  $("waiting").classList.remove("hide");
+  document.body.classList.add("waiting");
+}
+
+function apply(s){
+  const active = s.active && s.active.length;
+  if(!active){ showWaiting(); session = s.session; return; }
+
+  if(s.session !== session){
+    // yeni performans -> sıfırla
+    session = s.session;
+    selected = 0; paintStars(0);
+    $("pick").textContent = "";
+    $("send").disabled = true; $("send").classList.remove("sent");
+    $("send").textContent = "Puanı gönder";
+    $("note").textContent = "Yıldızlara dokunarak puanını seç";
+  }
+  showActive(s.active);
+}
+
+async function poll(){
+  try{ const r = await fetch("/api/state",{cache:"no-store"}); if(r.ok) apply(await r.json()); }catch{}
+}
+poll();
+setInterval(poll, 1500);
+</script>
+</body>
+</html>
